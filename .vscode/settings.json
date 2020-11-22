@@ -1,0 +1,5 @@
+{
+    "code-runner.executorMap": {
+        "cpp": "./build.sh && ./slicer ./tests/stls/cube.stl"
+    }
+}
