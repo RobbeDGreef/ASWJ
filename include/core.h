@@ -4,9 +4,10 @@
 #include <stdio.h>
 
 // C++ includes
-#include <string>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <vector>
 
 // Custom includes
 #include <debug.h>

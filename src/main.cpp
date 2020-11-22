@@ -6,6 +6,8 @@ int main(int argc, char const *argv[])
     {
         ERROR("No input files", 1);
     }
-    
-    StlParser(std::string(argv[1]));
+
+    std::string s(argv[1]);
+    StlParser parser(s);
+    parser.parse();
 }
