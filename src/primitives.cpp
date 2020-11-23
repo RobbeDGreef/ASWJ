@@ -48,7 +48,7 @@ vec3f Line::calc_point_from_z(float z)
 
 bool Line::contains_height(float height)
 {
-    // We ignore facets that are perfectly perpendicular with the z plane.
+    // We ignore facets that are perfectly parallel with the z plane.
     // This is because a completely solid object will always have edges that
     // touch this plane. These edges will thus be recorded instead of the plane
     // itself.

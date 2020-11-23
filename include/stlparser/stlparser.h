@@ -1,7 +1,7 @@
 #pragma once
 
 #include <core.h>
-#include <vec3f.h>
+#include <primitives.h>
 
 // The struct will hold 4 * 4 floats = 48 bytes + 2 attribute bytes 
 // giving us a total of 50 bytes.
