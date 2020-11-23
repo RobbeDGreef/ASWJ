@@ -34,5 +34,23 @@ void StlParser::parse()
     {
         m_stlfile.read((char*) &(m_facet_array[i]), FACET_STRUCT_SIZE);
         m_facet_array[i].calc_z_minmax();
+    
+        // See Facet::calc_z_minmax for an explanation, in short, 
+        // we cannot know the initial values for these variables and need
+        // to make sure that they are set correctly.
+        if (i == 0)
+        {
+            m_min_z = m_facet_array[i].min_z;
+            m_max_z = m_facet_array[i].max_z;
+        } else 
+        {
+            if (m_facet_array[i].min_z < m_min_z)
+                m_min_z = m_facet_array[i].min_z;
+            
+            if (m_facet_array[i].max_z > m_max_z)
+                m_max_z = m_facet_array[i].max_z;
+        }
+    }
+}
     }
 }
