@@ -32,7 +32,7 @@ void StlParser::parse()
 
     for (uint i = 0; i < facet_count; i++)
     {
-        m_stlfile >> (char*) &(m_facet_array[i]);
-        m_facet_array[i].print();
+        m_stlfile.read((char*) &(m_facet_array[i]), FACET_STRUCT_SIZE);
+        m_facet_array[i].calc_z_minmax();
     }
 }

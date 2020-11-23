@@ -3,10 +3,15 @@
 #include <core.h>
 #include <vec3f.h>
 
+// The struct will hold 4 * 4 floats = 48 bytes + 2 attribute bytes 
+// giving us a total of 50 bytes.
+#define FACET_STRUCT_SIZE 50
+
 // Simple stl facet structure
-struct Facet
+class Facet
 {
 public:
+    // The 
     struct vec3f normal;
     struct vec3f vertices[3];
     uint16_t attributes;
@@ -19,8 +24,8 @@ public:
         {
             LOG("Vert " << i << ": " << vertices[i].to_string());
         }
+
     }
-}__attribute__((packed));
 
 class StlParser
 {
