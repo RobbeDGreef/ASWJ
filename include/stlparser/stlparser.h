@@ -56,9 +56,13 @@ private:
     // of the object.
     float m_min_z;
     float m_max_z;
+
+    float m_layer_height = 0.2;
+
 public:
     StlParser(std::string file);
     ~StlParser();
 
     void parse();
+    void slice();
 };
