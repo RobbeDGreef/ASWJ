@@ -40,11 +40,13 @@ public:
                 max_z = vertices[i].z;
         }
     }
-        {
-            LOG("Vert " << i << ": " << vertices[i].to_string());
-        }
 
+    std::string to_string()
+    {
+        return "(" + vertices[0].to_string() + ") (" + vertices[1].to_string() + ") (" + vertices[1].to_string() + ")";
     }
+
+}
 
 class StlParser
 {
