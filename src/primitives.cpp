@@ -21,7 +21,7 @@ Vec3f Line::calc_point_from_z(float z)
 {
     // A little math never hurt anyone
 
-    // The x value of the point will be equal to the height 
+    // The z value of the point will be equal to the height 
     // we are slicing at.
     Vec3f res;
     res.z = z;
