@@ -87,7 +87,7 @@ void StlParser::slice()
                 };
 
                 // We keep track of the intersecting points in this vector
-                std::vector<vec3f> intersections;
+                std::vector<Vec3f> intersections;
                 for (int i = 0; i < 3; i++)
                 {
                     if (lines[i].contains_height(height))

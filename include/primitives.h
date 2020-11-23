@@ -2,7 +2,7 @@
 
 #include <core.h>
 
-struct vec3f
+class Vec3f
 {
 public:
     float x;
@@ -21,18 +21,18 @@ public:
 class Line
 {
 public:
-    struct vec3f p1;
-    struct vec3f p2;
+    Vec3f p1;
+    Vec3f p2;
 
     float m_min_z;
     float m_max_z;
 
 public:
     Line() {}
-    Line(vec3f p1, vec3f p2);
+    Line(Vec3f p1, Vec3f p2);
 
     std::string to_string() { return "(" + p1.to_string() + ") (" + p2.to_string() + ")"; }
 
     bool contains_height(float height);
-    vec3f calc_point_from_z(float z);
+    Vec3f calc_point_from_z(float z);
 };

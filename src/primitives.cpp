@@ -1,6 +1,6 @@
-#include <vec3f.h>
+#include <primitives.h>
 
-Line::Line(vec3f _x, vec3f _y)
+Line::Line(Vec3f _x, Vec3f _y)
 {
     p1 = _x;
     p2 = _y;
@@ -17,13 +17,13 @@ Line::Line(vec3f _x, vec3f _y)
     }
 }
 
-vec3f Line::calc_point_from_z(float z)
+Vec3f Line::calc_point_from_z(float z)
 {
     // A little math never hurt anyone
 
     // The x value of the point will be equal to the height 
     // we are slicing at.
-    vec3f res;
+    Vec3f res;
     res.z = z;
 
     // Formula y = m(x - x1) + y1 adapted

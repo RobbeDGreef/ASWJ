@@ -12,8 +12,8 @@ class Facet
 {
 public:
     // The 
-    struct vec3f normal;
-    struct vec3f vertices[3];
+    Vec3f normal;
+    Vec3f vertices[3];
     uint16_t attributes;
 
     float min_z;
@@ -45,8 +45,7 @@ public:
     {
         return "(" + vertices[0].to_string() + ") (" + vertices[1].to_string() + ") (" + vertices[1].to_string() + ")";
     }
-
-}
+};
 
 class StlParser
 {
