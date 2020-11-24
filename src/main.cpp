@@ -1,4 +1,5 @@
 #include <stlparser/stlparser.h>
+#include <generator/generator.h>
 
 int main(int argc, char const *argv[])
 {
@@ -10,5 +11,11 @@ int main(int argc, char const *argv[])
     std::string s(argv[1]);
     StlParser parser(s);
     parser.parse();
-    parser.slice();
+    
+    std::vector<std::list<Line>> &layers = parser.slice();
+    debug_layers_to_file(layers);
+
+    Generator generator(240, 95, 0.3);
+    generator.generate(layers);
+    generator.write_to_file("./test.gcode");
 }

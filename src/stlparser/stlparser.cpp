@@ -34,26 +34,15 @@ void StlParser::parse()
     {
         m_stlfile.read((char*) &(m_facet_array[i]), FACET_STRUCT_SIZE);
         m_facet_array[i].calc_z_minmax();
-    
-        // See Facet::calc_z_minmax for an explanation, in short, 
-        // we cannot know the initial values for these variables and need
-        // to make sure that they are set correctly.
-        if (i == 0)
-        {
+        
+        if (m_facet_array[i].min_z < m_min_z)
             m_min_z = m_facet_array[i].min_z;
-            m_max_z = m_facet_array[i].max_z;
-        } else 
-        {
-            if (m_facet_array[i].min_z < m_min_z)
-                m_min_z = m_facet_array[i].min_z;
-            
-            if (m_facet_array[i].max_z > m_max_z)
-                m_max_z = m_facet_array[i].max_z;
-        }
     }
+
+    apply_transform();
 }
 
-void StlParser::slice()
+std::vector<std::list<Line>> &StlParser::slice()
 {
     // This algorithm is O(n*m) where is n is the amount of facets
     // and m the height of the object divided by the layer height. 
@@ -68,10 +57,10 @@ void StlParser::slice()
     // The amount of layers is equal to the height of the object divided by the
     // layer height rounded up. (+1 because we use <= in the loop instead of <
     // and don't want any segfaults)
-    std::vector<std::list<Line>> layers(ceil((m_max_z - m_min_z) / m_layer_height)+1);
+    m_layers = std::vector<std::list<Line>>(ceil(m_object_height / m_layer_height)+1);
 
     int i_layer = 0;
-    for (float height = m_min_z; height <= m_max_z; height += m_layer_height)
+    for (float height = 0; height <= m_object_height; height += m_layer_height)
     {
         for (Facet facet : m_facet_array)
         {
@@ -112,17 +101,26 @@ void StlParser::slice()
         i_layer++;
     }
 
-    // Now lets print out layers to inspect the output   
-    for (int i = 0; i < layers.size(); i++)
-    {
-        LOG("Layer: " << i);
-        for (Line line : layers[i])
-        {
-            LOG("intersection line: " << line.to_string());
-        }
-    }
+    return m_layers;
+}
 
-    // Because this data is not very visible i wrote a script to dump this to
-    // files and display the data using python.
-    debug_layers_to_file(layers);
+void StlParser::apply_transform()
+{
+    m_offset.z = -m_min_z * m_scale.z;
+    LOG("min_z: " << m_min_z);
+    LOG("offset: " << m_offset.to_string());
+    LOG("scale: " << m_scale.to_string());
+
+    for (Facet &facet : m_facet_array)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            facet.vertices[i].transform(m_offset, m_scale);
+
+            if (facet.vertices[i].z > m_object_height)
+                m_object_height = facet.vertices[i].z;
+        }
+        facet.calc_z_minmax();
+    }
+    LOG("Object height: " << m_object_height);
 }

@@ -53,17 +53,21 @@ private:
     std::ifstream m_stlfile;
     std::vector<Facet> m_facet_array;
 
-    // These will hold the minimum and maximum z locations
-    // of the object.
-    float m_min_z;
-    float m_max_z;
+    float m_min_z = 0;
+    float m_object_height = 0;
 
-    float m_layer_height = 0.2;
+    float m_layer_height = 0.3;
+
+    Vec3f m_offset = Vec3f(80,80,0);
+    Vec3f m_scale = Vec3f(10,10,10);
+
+     std::vector<std::list<Line>> m_layers;
 
 public:
     StlParser(std::string file);
     ~StlParser();
 
     void parse();
-    void slice();
+    std::vector<std::list<Line>> &slice();
+    void apply_transform();
 };

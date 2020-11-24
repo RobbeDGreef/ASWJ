@@ -58,3 +58,20 @@ bool Line::contains_height(float height)
 
     return height >= m_min_z && height <= m_max_z;
 }
+
+void Vec3f::transform(Vec3f offset, Vec3f scale)
+{
+    // We do not yet support rotation
+    x *= scale.x;
+    y *= scale.y;
+    z *= scale.z;
+
+    x += offset.x;
+    y += offset.y;
+    z += offset.z;
+}
+
+bool test_float(float x, float y, float epsilon)
+{
+    return fabs(x - y) < epsilon;
+}

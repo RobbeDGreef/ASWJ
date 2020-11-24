@@ -14,7 +14,7 @@ class LineView(Frame):
         with open(os.path.join(TESTDIR, str(layer) + ".txt"), 'r') as f:
             for line in f.readlines():
                 try:
-                    locations = [int((float(x)+1.0) * 80) + 50 for x in line.split(' ')]
+                    locations = [int(float(x)) for x in line.split(' ')]
                     self.canvas.create_line(locations[0], locations[1], locations[3], locations[4])
                     self.canvas.create_oval(locations[0] - 2, locations[1] -2, locations[0] +2, locations[1] +2)
                     self.canvas.create_oval(locations[3] - 2, locations[4] -2, locations[3] +2, locations[4] +2)
