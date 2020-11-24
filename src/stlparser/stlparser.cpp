@@ -105,8 +105,8 @@ void StlParser::slice()
                 // and if so, discard the case as false.
                 // meaning we can never reach the point where 3 vertices intersect.
 
-                if (intersections.size() == 2)
-                    layers[i_layer].push_back(Line(intersections[0], intersections[1]));
+                if (intersections.size() == 2 && intersections[0] != intersections[1])
+                    m_layers[i_layer].push_back(Line(intersections[0], intersections[1]));
             }
         }
         i_layer++;
