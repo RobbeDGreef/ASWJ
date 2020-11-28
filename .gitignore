@@ -1,6 +1,7 @@
 build/
 vscode/
 docs/ 
+vprint/
 
 tests/debug
 
