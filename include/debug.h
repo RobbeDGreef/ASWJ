@@ -12,5 +12,5 @@
 #define FLOG(x) DW(printf(x))
 #define ERROR(x, errcode) DW(std::cerr << COLOR_RED << x << COLOR_END << "\n"; exit(errcode))
 
-class Line;
-void debug_layers_to_file(std::vector<std::list<Line>> &layers);
+class Layer;
+void debug_layers_to_file(std::vector<Layer> &layers);

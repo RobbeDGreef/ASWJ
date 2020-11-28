@@ -5,7 +5,7 @@
 // The precision we want in our testing
 #define COMP_PRECISION 0.0001f
 
-bool test_float(float x, float y, float epsilon);
+bool test_float(float x, float y, float epsilon=COMP_PRECISION);
 
 class Vec3f
 {

@@ -2,6 +2,7 @@
 
 #include <core.h>
 #include <primitives.h>
+#include <layer.h>
 
 // The struct will hold 4 * 4 floats = 48 bytes + 2 attribute bytes 
 // giving us a total of 50 bytes.
@@ -43,7 +44,7 @@ public:
 
     std::string to_string()
     {
-        return "(" + vertices[0].to_string() + ") (" + vertices[1].to_string() + ") (" + vertices[1].to_string() + ")";
+        return "(" + vertices[0].to_string() + ") (" + vertices[1].to_string() + ") (" + vertices[2].to_string() + ")";
     }
 };
 
@@ -58,16 +59,16 @@ private:
 
     float m_layer_height = 0.3;
 
-    Vec3f m_offset = Vec3f(80,80,0);
+    Vec3f m_offset = Vec3f(50,50,0);
     Vec3f m_scale = Vec3f(10,10,10);
 
-     std::vector<std::list<Line>> m_layers;
+     std::vector<Layer> m_layers;
 
 public:
     StlParser(std::string file);
     ~StlParser();
 
     void parse();
-    std::vector<std::list<Line>> &slice();
+    std::vector<Layer> &slice();
     void apply_transform();
 };

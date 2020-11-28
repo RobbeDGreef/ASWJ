@@ -42,7 +42,7 @@ void StlParser::parse()
     apply_transform();
 }
 
-std::vector<std::list<Line>> &StlParser::slice()
+std::vector<Layer> &StlParser::slice()
 {
     // This algorithm is O(n*m) where is n is the amount of facets
     // and m the height of the object divided by the layer height. 
@@ -57,7 +57,7 @@ std::vector<std::list<Line>> &StlParser::slice()
     // The amount of layers is equal to the height of the object divided by the
     // layer height rounded up. (+1 because we use <= in the loop instead of <
     // and don't want any segfaults)
-    m_layers = std::vector<std::list<Line>>(ceil(m_object_height / m_layer_height)+1);
+    m_layers = std::vector<Layer>(ceil(m_object_height / m_layer_height)+1);
 
     int i_layer = 0;
     for (float height = 0; height <= m_object_height; height += m_layer_height)
@@ -66,8 +66,9 @@ std::vector<std::list<Line>> &StlParser::slice()
         {
             // If the height is in range of the facets min and max height
             // try and find the intersection points.
-            if (facet.min_z <= height && facet.max_z >= height)
-            {
+            // Accounting for floating point precision is needed here as well.
+            if (facet.min_z <= (height + COMP_PRECISION) && facet.max_z >= (height - COMP_PRECISION))
+            {              
                 // The three lines every triangle consists of
                 Line lines[3] = {
                     Line(facet.vertices[0], facet.vertices[1]),
@@ -95,7 +96,7 @@ std::vector<std::list<Line>> &StlParser::slice()
                 // meaning we can never reach the point where 3 vertices intersect.
 
                 if (intersections.size() == 2 && intersections[0] != intersections[1])
-                    m_layers[i_layer].push_back(Line(intersections[0], intersections[1]));
+                    m_layers[i_layer].insert(Line(intersections[0], intersections[1]));
             }
         }
         i_layer++;

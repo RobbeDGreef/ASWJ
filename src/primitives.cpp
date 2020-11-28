@@ -53,10 +53,11 @@ bool Line::contains_height(float height)
     // touch this plane. These edges will thus be recorded instead of the plane
     // itself.
     // TODO: image to make this easier to understand
-    if (p1.z == height && p2.z == height)
+    if (test_float(p1.z, height) && test_float(p2.z, height))
         return false;
 
-    return height >= m_min_z && height <= m_max_z;
+    // We have to account for float precision here too
+    return height >= (m_min_z - COMP_PRECISION) && height <= (m_max_z + COMP_PRECISION);
 }
 
 void Vec3f::transform(Vec3f offset, Vec3f scale)

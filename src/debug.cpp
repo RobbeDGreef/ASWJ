@@ -1,16 +1,17 @@
 #include <primitives.h>
+#include <layer.h>
 #include <core.h>
 
-void debug_layers_to_file(std::vector<std::list<Line>> &layers)
+void debug_layers_to_file(std::vector<Layer> &layers)
 {
     std::ofstream out;
     
     int i = 0;
-    for (std::list<Line> list : layers)
+    for (Layer layer : layers)
     {
         out.open("tests/debug/" + std::to_string(i) + ".txt");
         
-        for (Line line : list)
+        for (Line line : layer.lines())
         {
             out << line.p1.to_string() << " " << line.p2.to_string() << "\n";
         }
