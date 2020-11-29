@@ -1,6 +1,6 @@
 # Part 2: Actual slicing
 
-[Repository commit link](github.com/RobbeDGreef/aswj/tree/455d3e5eea14840338ceca365f5586af148d4d72)
+[Repository commit link](https://github.com/RobbeDGreef/aswj/tree/455d3e5eea14840338ceca365f5586af148d4d72)
 
 In this part we will do some actual first slicing, exciting :)
 

@@ -1,6 +1,6 @@
 # Part 3: Generating some simple gcode
 
-[Repository commit link](github.com/RobbeDGreef/aswj/tree/8bada1eaf2f49277e3cd2382f66fc9dfbbdc8727)
+[Repository commit link](https://github.com/RobbeDGreef/aswj/tree/8bada1eaf2f49277e3cd2382f66fc9dfbbdc8727)
 
 A lot of code for a small print, but at least we made it ourselves:
 

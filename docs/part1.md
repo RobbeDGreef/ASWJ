@@ -1,6 +1,6 @@
 # Part 1: Loading the data
 
-[Repository commit link](github.com/RobbeDGreef/aswj/tree/f9a6fe31a69c703914096a52da9e43b02d6a6707)
+[Repository commit link](https://github.com/RobbeDGreef/aswj/tree/f9a6fe31a69c703914096a52da9e43b02d6a6707)
 
 Parsing the stl data is not that hard. Now that we know the structure of the file, we can
 define the structure in the code.
@@ -34,7 +34,7 @@ The vec3f structure is defined as
     
     
     public:
-        std::string to_string() 
+        std::string to_string() 8bada1eaf2f49277e3cd2382f66fc9dfbbdc8727
         {
             return std::to_string(x) + " " + std::to_string(y) + " " + std::to_string(z);   
         }
