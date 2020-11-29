@@ -24,7 +24,7 @@ curved thing I made
 would suffice.
 
 And for the coders here this is the stl file format in the *lingua franca* of programming, C.
-
+```c
     struct stl_file
     {
         uint8_t     header[80];     // Just an ascii header, has no real meaning.
@@ -52,10 +52,12 @@ And for the coders here this is the stl file format in the *lingua franca* of pr
             float   vertex3_z;      
         }; 
     }__attribute__((packed));
+```
 
 ## The basic code structure
 Currently I created the following folders and files
 
+```
 include/
     stlparser/
         stlparser.h
@@ -73,53 +75,57 @@ tests/
         box.stl
         cube.stl
         suzanne.stl
-        curved.stl
-        
+        curved.stl  
+build/
+
 CMakeLists.txt
 build.sh
+```
 
 main.cpp is a simple main file like you would expect:
 
-    #include <stlparser/stlparser.h>
+```cpp
+#include <stlparser/stlparser.h>
 
-    int main(int argc, char const *argv[])
+int main(int argc, char const *argv[])
+{
+    if (argc < 2)
     {
-        if (argc < 2)
-        {
-            ERROR("No input files", 1);
-        }
-    
-        StlParser(std::string(argv[1]));
+        ERROR("No input files", 1);
     }
 
+    StlParser(std::string(argv[1]));
+}
+```
 StlParser.cpp and StlParser.h respectivly:
+```cpp
+#include <stlparser/stlparser.h>
 
-    #include <stlparser/stlparser.h>
+StlParser::StlParser(std::string file)
+{
+    m_stlfile.open(file, std::ios::binary);
+    LOG("Opened file " << file);
+}
 
-    StlParser::StlParser(std::string file)
-    {
-        m_stlfile.open(file, std::ios::binary);
-        LOG("Opened file " << file);
-    }
+StlParser::~StlParser()
+{
+    m_stlfile.close();
+}
+```
+```cpp
+#pragma once
 
-    StlParser::~StlParser()
-    {
-        m_stlfile.close();
-    }
+#include <core.h>
 
-    // StlParser.h
-    #pragma once
-
-    #include <core.h>
-
-    class StlParser
-    {
-    private:
-        std::ifstream m_stlfile;
-    public:
-        StlParser(std::string file);
-        ~StlParser();
-    };
+class StlParser
+{
+private:
+    std::ifstream m_stlfile;
+public:
+    StlParser(std::string file);
+    ~StlParser();
+};
+```
 
 `core.h` is just a file that holds a lot of general headers that are used throughout the project.
 `debug.h` will hold debugging macros and functions. For now I implemented some basic printing

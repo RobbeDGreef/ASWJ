@@ -182,76 +182,79 @@ Now that we have a general idea we can get to the code.
 
 I started by writing a simple generator class
 
-    class Generator
-    {
-    private:
-        std::vector<Code> m_codes;
-        int m_temp;
-        int m_bed_temp;
-        float m_layer_height;
+```cpp
+class Generator
+{
+private:
+    std::vector<Code> m_codes;
+    int m_temp;
+    int m_bed_temp;
+    float m_layer_height;
         
-    public:
-        Generator(int temperature, int bed_temp, float layer_height);
-        void generate(std::vector<std::list<Line>> layers);
-        void write_to_file(std::string file);
-    };
+public:
+    Generator(int temperature, int bed_temp, float layer_height);
+    void generate(std::vector<std::list<Line>> layers);
+    void write_to_file(std::string file);
+};
+```
 
 Now I wanted to represent the gcodes in memory as another class:
-
-    class Parameter
+```cpp
+class Parameter
+{
+private:
+    char m_letter;
+    bool m_is_float;
+    union
     {
-    private:
-        char m_letter;
-        bool m_is_float;
-        union
-        {
-            float m_fvalue;
-            int m_ivalue;
-        };
-
-    public:
-        Parameter(char letter, float val);
-        Parameter(char letter, int val);
-
-        std::string to_string();
+        float m_fvalue;
+        int m_ivalue;
     };
 
-    typedef std::vector<Parameter> Code;
-    std::string code_to_string(Code);
+public:
+    Parameter(char letter, float val);
+    Parameter(char letter, int val);
 
+    std::string to_string();
+};
+
+typedef std::vector<Parameter> Code;
+std::string code_to_string(Code);
+```
 The `Code` class is just a typedef because inheriting a stl class is not a great
 idea most of the time.
 
 Since most of the gcode files will be very large, the generator constructor
 already reserves 500 codes, just to have a slight speed up.
 
-    Generator::Generator(int temp, int bed_temp, float layer_height)
-    {
-        // Reserver at least 500 lines for performance
-        m_codes.reserve(500);
-        m_temp = temp;
-        m_bed_temp = bed_temp;
-        m_layer_height = layer_height;
-    }
-
+```cpp
+Generator::Generator(int temp, int bed_temp, float layer_height)
+{
+    // Reserver at least 500 lines for performance
+    m_codes.reserve(500);
+    m_temp = temp;
+    m_bed_temp = bed_temp;
+    m_layer_height = layer_height;
+}
+```
 Writing to file is also pretty straight forward.
+```cpp
+void Generator::write_to_file(std::string file)
+{
+    std::ofstream out;
+    out.open(file);
 
-    void Generator::write_to_file(std::string file)
+    if (!out.is_open())
+        ERROR("Could not open file '" << file << "'", 1);
+
+    for (Code code : m_codes)
     {
-        std::ofstream out;
-        out.open(file);
-
-        if (!out.is_open())
-            ERROR("Could not open file '" << file << "'", 1);
-
-        for (Code code : m_codes)
-        {
-            out << code_to_string(code) << "\n";
-        }
-
-        out.close();
+        out << code_to_string(code) << "\n";
     }
 
+    out.close();
+}
+```
 Now that we got that cleared up, we want to implement the `generate()` function.
 I split the gcode generation up into seperate functions, this way I can easily 
 change settings per layer. 
@@ -261,66 +264,70 @@ basic in the `calc_flows()` function.
 
 This is what the `generate()` function looks like right now:
 
-    void Generator::generate(std::vector<std::list<Line>> layers)
-    {
-        // For now we will just focus on generating the gcode for one layer.
+```cpp
+void Generator::generate(std::vector<std::list<Line>> layers)
+{
+    // For now we will just focus on generating the gcode for one layer.
 
-        // If there were any previous codes in the array clear them
-        // (for example if we reslice the object after moving it etc.)
-        m_codes.clear();
+    // If there were any previous codes in the array clear them
+    // (for example if we reslice the object after moving it etc.)
+    m_codes.clear();
 
-        gen_begin_of_gcode();
+    gen_begin_of_gcode();
 
-        // The first thing we want to do is calculate the adjacent lines and 
-        // create a flow of nodes.
-        std::vector<std::list<Vec3f>> flows = calc_flows(layers[0]);
+    // The first thing we want to do is calculate the adjacent lines and 
+    // create a flow of nodes.
+    std::vector<std::list<Vec3f>> flows = calc_flows(layers[0]);
 
-        // The first layer has custom settings for better adhesion.
-        gen_layer_gcode(1800, 0.091, flows);
+    // The first layer has custom settings for better adhesion.
+    gen_layer_gcode(1800, 0.091, flows);
 
-        gen_end_of_gcode();
-    }
+    gen_end_of_gcode();
+}
+```
 
 To calculate the flows we do the following. We simply store a vector of flows. Every
 flow is represented as a list of `Vec3f`s. These represent the points that the printer
 head has to go to.
 
-    std::vector<std::list<Vec3f>> Generator::calc_flows(std::list<Line> lines)
+```cpp
+std::vector<std::list<Vec3f>> Generator::calc_flows(std::list<Line> lines)
+{
+    if (lines.size() == 0)
+        return {};
+
+    // A flow can never be empty.
+    std::vector<std::list<Vec3f>> flows(1, std::list<Vec3f>{lines.front().p1, lines.front().p2} );
+    lines.pop_front();
+    int i_flow = 0;
+
+    while (lines.size() != 0)
     {
-        if (lines.size() == 0)
-            return {};
+        Vec3f &p = flows[i_flow].back();
 
-        // A flow can never be empty.
-        std::vector<std::list<Vec3f>> flows(1, std::list<Vec3f>{lines.front().p1, lines.front().p2} );
-        lines.pop_front();
-        int i_flow = 0;
-
-        while (lines.size() != 0)
+        for (auto i_line = lines.begin(); i_line != lines.end(); ++i_line)
         {
-            Vec3f &p = flows[i_flow].back();
-
-            for (auto i_line = lines.begin(); i_line != lines.end(); ++i_line)
+            Line line = *i_line;
+            if (line.p1 == p || line.p2 == p)
             {
-                Line line = *i_line;
-                if (line.p1 == p || line.p2 == p)
-                {
-                    Vec3f &to_push = (line.p1 == p) ? line.p2 : line.p1;
-                    flows[i_flow].push_back(to_push);
-                    lines.erase(i_line);
-                    break;
-                }
-            }
-
-            // If we did not find an adjacent line
-            if (flows[i_flow].back() == p)
-            {
-                i_flow++;
-                flows.push_back(std::list<Vec3f>{lines.front().p1, lines.front().p2});
+                Vec3f &to_push = (line.p1 == p) ? line.p2 : line.p1;
+                flows[i_flow].push_back(to_push);
+                lines.erase(i_line);
+                break;
             }
         }
 
-        return flows;
+        // If we did not find an adjacent line
+        if (flows[i_flow].back() == p)
+        {
+            i_flow++;
+            flows.push_back(std::list<Vec3f>{lines.front().p1, lines.front().p2});
+        }
     }
+
+    return flows;
+}
+```
 
 For this I also had to implement the == operator in the vec3f class.
 However if you have ever worked with floating point value you know that
@@ -329,24 +336,26 @@ on our tests. To do this I implemented a simple `test_float()` function that tak
 float values and a epsilon (precision) value.
 (I also Implemented the != operator because it will come in handy later)
 
-    #define COMP_PRECISION 0.0001f
+```cpp
+#define COMP_PRECISION 0.0001f
 
-    bool operator==(const Vec3f other)
-    {
-        return test_float(x, other.x, COMP_PRECISION) && test_float(y, other.y, COMP_PRECISION) 
-            && test_float(z, other.z, COMP_PRECISION);
-    }
-    bool operator!=(const Vec3f other)
-    {
-        // TODO: tolerance
-        return !test_float(x, other.x, COMP_PRECISION) || !test_float(y, other.y COMP_PRECISION)
-            || !test_float(z, other.z, COMP_PRECISION);
-    }
+bool operator==(const Vec3f other)
+{
+    return test_float(x, other.x, COMP_PRECISION) && test_float(y, other.y, COMP_PRECISION) 
+        && test_float(z, other.z, COMP_PRECISION);
+}
+bool operator!=(const Vec3f other)
+{
+    // TODO: tolerance
+    return !test_float(x, other.x, COMP_PRECISION) || !test_float(y, other.y COMP_PRECISION)
+        || !test_float(z, other.z, COMP_PRECISION);
+}
 
-    bool test_float(float x, float y, float epsilon)
-    {
-        return fabs(x - y) < epsilon;
-    }
+bool test_float(float x, float y, float epsilon)
+{
+    return fabs(x - y) < epsilon;
+}
+```
 
 And this seems to work pretty well.
 
@@ -354,62 +363,65 @@ Now its time to take a look at our generation functions.
 The first one is `gen_begin_of_gcode()` which generates the preamble gcode.
 It is a simple function, again, more comment than code here.
 
-    void Generator::gen_begin_of_gcode()
-    {
-        // Turn off the fan for the first layer
-        m_codes.push_back({Parameter('M', 107)});
+```cpp
+void Generator::gen_begin_of_gcode()
+{
+    // Turn off the fan for the first layer
+    m_codes.push_back({Parameter('M', 107)});
 
-        // Set the extruder temperature and do not wait
-        m_codes.push_back({Parameter('M', 104), Parameter('S', m_temp)});
+    // Set the extruder temperature and do not wait
+    m_codes.push_back({Parameter('M', 104), Parameter('S', m_temp)});
 
-        // Set the bed temperature
-        m_codes.push_back({Parameter('M', 140), Parameter('S', m_bed_temp)});
+    // Set the bed temperature
+    m_codes.push_back({Parameter('M', 140), Parameter('S', m_bed_temp)});
 a thick;
 
-        // Wait for extruder temperature
-        m_codes.push_back({Parameter('M', 109), Parameter('S', m_temp)});
+    // Wait for extruder temperature
+    m_codes.push_back({Parameter('M', 109), Parameter('S', m_temp)});
 
-        // Home all axis without mesh bed level
-        m_codes.push_back({Parameter('G', 28), Parameter('M', 0)});
+    // Home all axis without mesh bed level
+    m_codes.push_back({Parameter('G', 28), Parameter('M', 0)});
 
-        // Mesh bed leveling
-        m_codes.push_back({Parameter('G', 80)});
+    // Mesh bed leveling
+    m_codes.push_back({Parameter('G', 80)});
 
-        // Typical prusa intro line: 
-        m_codes.push_back({Parameter('G', 92)});
-        m_codes.push_back({Parameter('G', 1), Parameter('Y', -3.0f), Parameter('F', 1000)});
-        m_codes.push_back({Parameter('G', 1), Parameter('X', 100.0f), Parameter('E', 12.0f),Parameter('F', 1000)});
+    // Typical prusa intro line: 
+    m_codes.push_back({Parameter('G', 92)});
+    m_codes.push_back({Parameter('G', 1), Parameter('Y', -3.0f), Parameter('F', 1000)});
+    m_codes.push_back({Parameter('G', 1), Parameter('X', 100.0f), Parameter('E', 12.0f)Parameter('F', 1000)});
 
-        // Lift the nozzle
-        m_codes.push_back({Parameter('G', 1), Parameter('Z', 5), Parameter('F', 5000)});
+    // Lift the nozzle
+    m_codes.push_back({Parameter('G', 1), Parameter('Z', 5), Parameter('F', 5000)});
 
-        // Set to millimeters, absolute coordinates and absolute distance for extrusion
-        m_codes.push_back({Parameter('G', 21)});
-        m_codes.push_back({Parameter('G', 90)});
-        m_codes.push_back({Parameter('M', 82)});
+    // Set to millimeters, absolute coordinates and absolute distance for extrusion
+    m_codes.push_back({Parameter('G', 21)});
+    m_codes.push_back({Parameter('G', 90)});
+    m_codes.push_back({Parameter('M', 82)});
 
-        // Interpret current extrusion as 0
-        m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
-    }
-
+    // Interpret current extrusion as 0
+    m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
+}
+```
 The `gen_end_of_gcode()` is something similar.
 
-    void Generator::gen_end_of_gcode()
-    {
-        m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
+```cpp
+void Generator::gen_end_of_gcode()
+{
+    m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
 
-        // Turn off the fan
-        m_codes.push_back({Parameter('M', 107)});
+    // Turn off the fan
+    m_codes.push_back({Parameter('M', 107)});
 
-        // Turn off temperature
-        m_codes.push_back({Parameter('M', 104), Parameter('S', 0)});
+    // Turn off temperature
+    m_codes.push_back({Parameter('M', 104), Parameter('S', 0)});
 
-        // Home the x axis
-        m_codes.push_back({Parameter('G', 28), Parameter('X', 0)});
+    // Home the x axis
+    m_codes.push_back({Parameter('G', 28), Parameter('X', 0)});
 
-        // Disable the motors
-        m_codes.push_back({Parameter('M', 84)});
-    }
+    // Disable the motors
+    m_codes.push_back({Parameter('M', 84)});
+}
+```
 
 As you can see these just generate the codes that we talked about earlier.
 
@@ -419,41 +431,43 @@ and move it for every flow). We do have to calculate the amount of extruded fila
 I just pass the function a extrusion ratio which is equal to the amount of extrusion that should
 happen per mm that the head moves. 
 
-    void Generator::gen_layer_gcode(float motor_speed, float extrusion_rat, std::vector<std::list<Vec3f>> flows)
+```cpp
+void Generator::gen_layer_gcode(float motor_speed, float extrusion_rat, std::vector<std::list<Vec3f>> flows)
+{
+    LOG("Gcode flow size " << flows.size());
+    // Between every flow we will lift the head and move to the next starting point
+    for (int i = 0; i < flows.size(); i++)
     {
-        LOG("Gcode flow size " << flows.size());
-        // Between every flow we will lift the head and move to the next starting point
-        for (int i = 0; i < flows.size(); i++)
-        {
-            std::list<Vec3f> flow = flows[i];
-            gen_move_to(flow.front(), i);
-            m_codes.push_back({Parameter('G', 1), Parameter('F', motor_speed)});
+        std::list<Vec3f> flow = flows[i];
+        gen_move_to(flow.front(), i);
+        m_codes.push_back({Parameter('G', 1), Parameter('F', motor_speed)});
 
-            float extruded = 0;
-            Vec3f &previous_p = flow.front();
-            for (auto imove = std::next(flow.begin()); imove != flow.end(); ++imove)
-            {
-                Vec3f &p = *imove;
-                float length = sqrtf32( powf32(previous_p.x - p.x, 2) + powf32(previous_p.y - p.y,  2));
-                extruded += length * extrusion_rat;
-                m_codes.push_back({Parameter('G', 1), Parameter('X', p.x), Parameter('Y', p.y, Parameter('E', extruded)});
-                previous_p = p;
-            }
+        float extruded = 0;
+        Vec3f &previous_p = flow.front();
+        for (auto imove = std::next(flow.begin()); imove != flow.end(); ++imove)
+        {
+            Vec3f &p = *imove;
+            float length = sqrtf32( powf32(previous_p.x - p.x, 2) + powf32(previous_p.y - p.y,  2));
+            extruded += length * extrusion_rat;
+            m_codes.push_back({Parameter('G', 1), Parameter('X', p.x), Parameter('Y', p.y, Parameter('E', extruded)});
+            previous_p = p;
         }
     }
+}
 
-    void Generator::gen_move_to(Vec3f p, int layer)
-    {
-        float height = (layer + 1) * m_layer_height;
-        m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
-        m_codes.push_back({Parameter('G', 1), Parameter('Z', height + 1), Parameter('E', -2.0f)});
-        m_codes.push_back({Parameter('G', 1), Parameter('X', p.x), Parameter('Y', p.y)});
-        m_codes.push_back({Parameter('G', 1), Parameter('Z', height), Parameter('E', 2.0f)});
-        m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
-    }
-
+void Generator::gen_move_to(Vec3f p, int layer)
+{
+    float height = (layer + 1) * m_layer_height;
+    m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
+    m_codes.push_back({Parameter('G', 1), Parameter('Z', height + 1), Parameter('E', -2.0f)});
+    m_codes.push_back({Parameter('G', 1), Parameter('X', p.x), Parameter('Y', p.y)});
+    m_codes.push_back({Parameter('G', 1), Parameter('Z', height), Parameter('E', 2.0f)});
+    m_codes.push_back({Parameter('G', 92), Parameter('E', 0)});
+}
+```
 Now I just changed our main file a bit.
 
+```cpp
     std::string s(argv[1]);
     StlParser parser(s);
     parser.parse();
@@ -464,6 +478,7 @@ Now I just changed our main file a bit.
     Generator generator(240, 95, 0.3);
     generator.generate(layers);
     generator.write_to_file("./test.gcode");
+```
 
 The last thing we need to concern ourselves with is the objects location and scale (rotation
 too but thats something for later).
@@ -471,45 +486,49 @@ I implemented a `apply_transform()` function that applies a certain
 scale and offset to all the vertices of all the facets. On top of that
 I ground the object so that the lowest vertex is at z height 0.
 
-    void StlParser::apply_transform()
+```cpp
+void StlParser::apply_transform()
+{
+    m_offset.z = -m_min_z * m_scale.z;
+    LOG("min_z: " << m_min_z);
+    LOG("offset: " << m_offset.to_string());
+    LOG("scale: " << m_scale.to_string());
+
+    for (Facet &facet : m_facet_array)
     {
-        m_offset.z = -m_min_z * m_scale.z;
-        LOG("min_z: " << m_min_z);
-        LOG("offset: " << m_offset.to_string());
-        LOG("scale: " << m_scale.to_string());
-
-        for (Facet &facet : m_facet_array)
+        for (int i = 0; i < 3; i++)
         {
-            for (int i = 0; i < 3; i++)
-            {
-                facet.vertices[i].transform(m_offset, m_scale);
+            facet.vertices[i].transform(m_offset, m_scale);
 
-                if (facet.vertices[i].z > m_object_height)
-                    m_object_height = facet.vertices[i].z;
-            }
-            facet.calc_z_minmax();
+            if (facet.vertices[i].z > m_object_height)
+                m_object_height = facet.vertices[i].z;
         }
-        LOG("Object height: " << m_object_height);
+        facet.calc_z_minmax();
     }
-
+    LOG("Object height: " << m_object_height);
+}
+```
 I also changed the parse function a bit because we don't need to
 keep track of m_max_z anymore.
 
-    // ...
-        for (uint i = 0; i < facet_count; i++)
-        {
-            m_stlfile.read((char*) &(m_facet_array[i]),FACET_STRUCT_SIZE);
-            m_facet_array[i].calc_z_minmax();
+```cpp
+// ...
+    for (uint i = 0; i < facet_count; i++)
+    {
+        m_stlfile.read((char*) &(m_facet_array[i]),FACET_STRUCT_SIZE);
+        m_facet_array[i].calc_z_minmax();
             
-            if (m_facet_array[i].min_z < m_min_z)
-                m_min_z = m_facet_array[i].min_z;
-        }
-    
-        apply_transform();
+        if (m_facet_array[i].min_z < m_min_z)
+            m_min_z = m_facet_array[i].min_z;
     }
+    
+    apply_transform();
+}
+```
 
 And of course the slice function too.
 
+```cpp
     // ...
     m_layers = std::vector<std::list<Line>>(ceil(m_object_height / m_layer_height)+1);
 
@@ -517,7 +536,7 @@ And of course the slice function too.
     for (float height = 0; height <= m_object_height; height += m_layer_height)
     {
         // ...
-    
+```
 
 See the `stlparser.h` and layerview.py for the offset and scale changes.
 

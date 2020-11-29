@@ -105,25 +105,26 @@ relevant code parts.
 renamed struct vec3f itself to Vec3f (class) to be more c++ish and consistent)
 
 I implemented a Line class that just holds two points
+```cpp
+class Line
+{
+public:
+    struct vec3f p1;
+    struct vec3f p2;
 
-    class Line
-    {
-    public:
-        struct vec3f p1;
-        struct vec3f p2;
+    float m_min_z;
+    float m_max_z;
 
-        float m_min_z;
-        float m_max_z;
+public:
+    Line() {}
+    Line(vec3f p1, vec3f p2);
 
-    public:
-        Line() {}
-        Line(vec3f p1, vec3f p2);
+    std::string to_string() { return "(" + p1.to_string() + ") (" + p2.to_string() + ")"; }
 
-        std::string to_string() { return "(" + p1.to_string() + ") (" + p2.to_string() + ")"; }
-
-        bool contains_height(float height);
-        vec3f calc_point_from_z(float z);
-    };
+    bool contains_height(float height);
+    vec3f calc_point_from_z(float z);
+};
+```
 
 The Line class gets two important functions: `contains_height` and `calc_point_from_z`.
 The first one is a predicate that return true if the height is larger or equal to the 
@@ -131,122 +132,123 @@ smallest z height of the line points and smaller or equal to the largest z heigh
 However it will also return false if the line is exactly at the z plane (p1.z == p2.z == height).
 This is again because the facet will have other lines whose points will be recorded instead.
 
-    bool Line::contains_height(float height)
-    {
-        if (p1.z == height && p2.z == height)
-            return false;
+```cpp
+bool Line::contains_height(float height)
+{
+    if (p1.z == height && p2.z == height)
+        return false;
 
-        return height >= m_min_z && height <= m_max_z;
-    }
+    return height >= m_min_z && height <= m_max_z;
+}
 
-    Vec3f Line::calc_point_from_z(float z)
-    {
-        // A little math never hurt anyone
+Vec3f Line::calc_point_from_z(float z)
+{
+    // A little math never hurt anyone
 
-        // The z value of the point will be equal to the height 
-        // we are slicing at.
-        Vec3f res;
-        res.z = z;
+    // The z value of the point will be equal to the height 
+    // we are slicing at.
+    Vec3f res;
+    res.z = z;
 
-        // Formula y = m(x - x1) + y1 adapted
-        // to x = (y-y1) / m + x1
-        // 
-        // for x1 != x2 because then we get an infinite m. If x1 is actually
-        // equal to x2 we just set the x to that value.
-        if (p1.x == p2.x)
-            res.x = p1.x;
-        else
-            res.x = (z - p1.z) / ((p2.z - p1.z) / (p2.x - p1.x)) + p1.x;
+    // Formula y = m(x - x1) + y1 adapted
+    // to x = (y-y1) / m + x1
+    // 
+    // for x1 != x2 because then we get an infinite m. If x1 is actually
+    // equal to x2 we just set the x to that value.
+    if (p1.x == p2.x)
+        res.x = p1.x;
+    else
+        res.x = (z - p1.z) / ((p2.z - p1.z) / (p2.x - p1.x)) + p1.x;
 
-        // Same goes for y, instead of x we just use y
-        if (p1.y == p2.y)
-            res.y = p1.y;
+    // Same goes for y, instead of x we just use y
+    if (p1.y == p2.y)
+        res.y = p1.y;
 
-        else
-            res.y = (z - p1.z) / ((p2.z - p1.z) / (p2.y - p1.y)) + p1.y;
+    else
+        res.y = (z - p1.z) / ((p2.z - p1.z) / (p2.y - p1.y)) + p1.y;
 
-        return res;
-    }
-
+    return res;
+}
+```
 And now the grand supreme function:
 (don't be scared about the size, its more comment than code)
+```cpp
+void StlParser::slice()
+{
+    // This algorithm is O(n*m) where is n is the amount of facets
+    // and m the height of the object divided by the layer height. 
+    // Thats bad. However we will focus on a better solution later.
 
-    void StlParser::slice()
+    // We create a vector of lists of lines to hold the layer data.
+    // For the amount of layers we choose a vector because we already know
+    // how large this array will be and random access is nice. We don't know
+    // how many lines it will hold though and using a vector here would
+    // be very inefficient.
+    //
+    // The amount of layers is equal to the height of the object divided by the
+    // layer height rounded up. (+1 because we use <= in the loop instead of <
+    // and don't want any segfaults)
+    std::vector<std::list<Line>> layers(ceil((m_max_z - m_min_z) / m_layer_height)+1);
+
+    int i_layer = 0;
+    for (float height = m_min_z; height <= m_max_z; height += m_layer_height)
     {
-        // This algorithm is O(n*m) where is n is the amount of facets
-        // and m the height of the object divided by the layer height. 
-        // Thats bad. However we will focus on a better solution later.
-
-        // We create a vector of lists of lines to hold the layer data.
-        // For the amount of layers we choose a vector because we already know
-        // how large this array will be and random access is nice. We don't know
-        // how many lines it will hold though and using a vector here would
-        // be very inefficient.
-        //
-        // The amount of layers is equal to the height of the object divided by the
-        // layer height rounded up. (+1 because we use <= in the loop instead of <
-        // and don't want any segfaults)
-        std::vector<std::list<Line>> layers(ceil((m_max_z - m_min_z) / m_layer_height)+1);
-
-        int i_layer = 0;
-        for (float height = m_min_z; height <= m_max_z; height += m_layer_height)
+        for (Facet facet : m_facet_array)
         {
-            for (Facet facet : m_facet_array)
+            // If the height is in range of the facets min and max height
+            // try and find the intersection points.
+            if (facet.min_z <= height && facet.max_z >= height)
             {
-                // If the height is in range of the facets min and max height
-                // try and find the intersection points.
-                if (facet.min_z <= height && facet.max_z >= height)
+                // The three lines every triangle consists of
+                Line lines[3] = {
+                    Line(facet.vertices[0], facet.vertices[1]),
+                    Line(facet.vertices[1], facet.vertices[2]),
+                    Line(facet.vertices[2], facet.vertices[0]),
+                };
+
+                // We keep track of the intersecting points in this vector
+                std::vector<Vec3f> intersections;
+                for (int i = 0; i < 3; i++)
                 {
-                    // The three lines every triangle consists of
-                    Line lines[3] = {
-                        Line(facet.vertices[0], facet.vertices[1]),
-                        Line(facet.vertices[1], facet.vertices[2]),
-                        Line(facet.vertices[2], facet.vertices[0]),
-                    };
-
-                    // We keep track of the intersecting points in this vector
-                    std::vector<Vec3f> intersections;
-                    for (int i = 0; i < 3; i++)
+                    if (lines[i].contains_height(height))
                     {
-                        if (lines[i].contains_height(height))
-                        {
-                            intersections.push_back(lines[i].calc_point_from_z(height));
-                        }
+                        intersections.push_back(lines[i].calc_point_from_z(height));
                     }
-
-                    // If only one point intersects the z plane, we ignore it
-                    // because this means we cannot create a line. And printing
-                    // a single point is useless.
-                    //
-                    // We don't handle any cases where all 3 points intersect because
-                    // we already check if this is the case in Line::contains_height()
-                    // and if so, discard the case as false.
-                    // meaning we can never reach the point where 3 vertices intersect.
-
-                    // We ignore lines that have the same start and end points because those are
-                    // just points and we don't want those in the sliced data.
-                    if (intersections.size() == 2 && intersections[0] != intersections[1])
-                        m_layers[i_layer].push_back(Line(intersections[0], intersections[1]));
                 }
-            }
-            i_layer++;
-        }
 
-        // Now lets print out layers to inspect the output   
-        for (int i = 0; i < layers.size(); i++)
-        {
-            LOG("Layer: " << i);
-            for (Line line : layers[i])
-            {
-                LOG("intersection line: " << line.to_string());
+                // If only one point intersects the z plane, we ignore it
+                // because this means we cannot create a line. And printing
+                // a single point is useless.
+                //
+                // We don't handle any cases where all 3 points intersect because
+                // we already check if this is the case in Line::contains_height()
+                // and if so, discard the case as false.
+                // meaning we can never reach the point where 3 vertices intersect.
+
+                // We ignore lines that have the same start and end points because those are
+                // just points and we don't want those in the sliced data.
+                if (intersections.size() == 2 && intersections[0] != intersections[1])
+                    m_layers[i_layer].push_back(Line(intersections[0], intersections[1]));
             }
         }
-
-        // Because this data is not very visible i wrote a script to dump this to
-        // files and display the data using python.
-        debug_layers_to_file(layers);
+        i_layer++;
     }
 
+    // Now lets print out layers to inspect the output   
+    for (int i = 0; i < layers.size(); i++)
+    {
+        LOG("Layer: " << i);
+        for (Line line : layers[i])
+        {
+            LOG("intersection line: " << line.to_string());
+        }
+    }
+
+    // Because this data is not very visible i wrote a script to dump this to
+    // files and display the data using python.
+    debug_layers_to_file(layers);
+}
+```
 Now in the main file after the `parser.parse()` just call `parser.slice()`.
 
 Now that I saw the slice data printed, I wanted to visualize the code to do so I wrote a small
