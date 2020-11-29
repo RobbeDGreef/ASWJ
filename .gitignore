@@ -7,3 +7,4 @@ tests/debug
 
 slicer
 .gitignore
+test.gcode
