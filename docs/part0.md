@@ -1,6 +1,6 @@
 # Part 0: STL info and the basic code structure
 
-[Repository commit link](github.com/RobbeDGreef/aswj/tree/cf6362eed1c22061048955b0ebaa040356fddfe4)
+[Repository commit link](cf6362eed1c22061048955b0ebaa040356fddfe4)
 
 ## Stl file format (theory)
 The first thing I did was look up a stl documentation spec. Since that is the file format I am going
