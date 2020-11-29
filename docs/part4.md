@@ -1,6 +1,6 @@
 # Part 4: Infill and a first layer
 
-[Repository commit link](github.com/RobbeDGreef/aswj/tree/0c098b9a36732c4c96a56cda42bc75d6bada879d)
+[Repository commit link](https://github.com/RobbeDGreef/aswj/tree/e6715ca7f6b678b0877abc156b81036ce6031ba4)
 
 In this part we are going to start on some basic infill and a first layer.
 I got some pretty good results.
