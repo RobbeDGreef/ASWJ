@@ -1,15 +1,15 @@
 # Part 0: STL info and the basic code structure
 
-[Repository commit link](cf6362eed1c22061048955b0ebaa040356fddfe4)
+[Repository commit link](https://github.com/RobbeDGreef/aswj/tree/cf6362eed1c22061048955b0ebaa040356fddfe4)
 
 ## Stl file format (theory)
 The first thing I did was look up a stl documentation spec. Since that is the file format I am going
 for. I immediately found the stl [wikipedia page](https://en.wikipedia.org/wiki/STL_(file_format)) which gave some insight into the stl format.
 There are three things I immediately noticed:
 
-    - There are two types of stl formats (ascii and binary).
-    - Stl files contain no scale information
-    - The file just exists of a tom of triangles and a header, nothing else.
+- There are two types of stl formats (ascii and binary).
+- Stl files contain no scale information
+- The file just exists of a tom of triangles and a header, nothing else.
 
 The latter was something I already suspected but now I was certain. The [fabbers site](http://www.fabbers.com/tech/STL_Format)
 had the best information about the exact format in my opinion. Since I quickly realized ascii
